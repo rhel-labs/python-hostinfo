@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${createOsDetailItem('bi-cpu', 'Processor', os.processor)}
                 ${createOsDetailItem('bi-motherboard', 'Architecture', os.machine)}
 		${createOsDetailItem('bi-stopwatch', 'System Uptime', os.uptime)}
+		${createOsDetailItem('bi-clipboard2-heart-fill', 'Operating Mode', os.mode)}
+
             `;
 
             // 3. Update Python Packages Table

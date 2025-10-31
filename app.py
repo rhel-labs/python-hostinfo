@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime
 from flask import Flask, render_template, jsonify # <-- Add jsonify
-from helpers import get_os_info, get_python_package_version, get_system_package_version, get_system_uptime
+from helpers import get_os_info, get_python_package_version, get_system_package_version, get_system_uptime, get_image_mode_state
 
 app = Flask(__name__)
 
@@ -37,6 +37,8 @@ def get_all_data():
         current_os_id = 'macos'
     elif os_details.get('system') == 'Windows':
         current_os_id = 'windows'
+
+    os_details['mode'] = get_image_mode_state()
 
     python_pkg_versions = [
         {"name": pkg_name, "version": get_python_package_version(pkg_name)}

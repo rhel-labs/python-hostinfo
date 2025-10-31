@@ -1,6 +1,7 @@
 # helpers.py
 
 import platform
+import os
 import subprocess
 import importlib.metadata
 import distro # You'll need to install this: pip install distro
@@ -25,6 +26,18 @@ def _get_linux_cpu_info():
         return None
     # Return None if the "model name" line was not found
     return None
+
+def get_image_mode_state():
+    """Get the operating mode based on the presence of /run/ostree-booted"""
+    try:
+        os.stat('/run/ostree-booted')
+        return f'Image'
+    except FileNotFoundError:
+        # This file doesn't exist on non-rpm-ostree / bootc hosts
+        return f'Package'
+    except Exception as e:
+        print(f"An error occurred while reading /run/ostree-booted: {e}")
+        return None
 
 def get_os_info():
     """
