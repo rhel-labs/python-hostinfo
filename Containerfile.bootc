@@ -1,7 +1,7 @@
 # Don't carry the SELinux build artifacts in the app
 # Use the multistage build pattern to compile the binary
 FROM registry.redhat.io/rhel10/rhel-bootc AS semodule
-COPY nginx_connect_flask_sock.te .
+COPY app/nginx_connect_flask_sock.te .
 RUN checkmodule -M -m nginx_connect_flask_sock.te -o nginx_connect_flask_sock.mo
 RUN semodule_package -o nginx_connect_flask_sock.pp -m nginx_connect_flask_sock.mo
 
@@ -17,8 +17,13 @@ RUN dnf install -y \
     dnf clean all && rm -rf /var/cache/dnf
 
 # Copy your Flask application files and Gunicorn configuration
-RUN mkdir /opt/app && ln -sr /opt/app /app
-ADD . /app
+RUN <<EORUN
+set -xeuo pipefail
+mkdir /opt/app
+ln -sr /opt/app /app
+semanage fcontext -f l -a -t usr_t /app
+EORUN
+ADD app/ /app
 
 # Install requirements via pip3
 RUN pip3 install -r /opt/app/requirements.txt
@@ -39,3 +44,5 @@ RUN semanage fcontext -a -t httpd_var_run_t /run/flask-app
 # Enable our application services
 RUN systemctl enable nginx.service
 RUN systemctl enable info-app.service
+
+RUN bootc container lint
