@@ -1,5 +1,5 @@
 # Start with the RHEL 10 bootable base image
-FROM registry.redhat.io/rhel10/rhel-bootc
+FROM registry.redhat.io/rhel10/rhel-bootc:10.1
 
 # Install necessary packages from RHEL Application Streams using dnf
 # This includes default Python 3, pip, and Nginx
@@ -10,8 +10,8 @@ RUN dnf install -y \
     dnf clean all && rm -rf /var/cache/dnf
 
 # Copy the Flask application files and Gunicorn service file
-ADD app/ /app
-COPY /app/info-app.service /etc/systemd/system/
+ADD . /app
+COPY info-app.service /etc/systemd/system/
 
 # Install requirements via pip3
 RUN pip3 install -r /app/requirements.txt
@@ -20,7 +20,7 @@ RUN pip3 install -r /app/requirements.txt
 # Copy a custom Nginx configuration file that acts as a reverse proxy
 # This file needs to be created separately and configured to forward requests
 # to the Gunicorn process (e.g., listening on localhost:80)
-COPY /app/info-app.conf /etc/nginx/conf.d/
+COPY info-app.conf /etc/nginx/conf.d/
 
 # Ensure nginx can talk to gunicorn
 WORKDIR /app
