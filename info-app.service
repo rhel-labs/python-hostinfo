@@ -1,3 +1,5 @@
+[Unit]
+Description=Host information services
 After=network.target
 
 [Service]
