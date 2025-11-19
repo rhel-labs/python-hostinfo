@@ -10,7 +10,7 @@ RUN dnf install -y \
     dnf clean all && rm -rf /var/cache/dnf
 
 # Copy the Flask application files and Gunicorn service file
-ADD . /app
+COPY . /app
 COPY info-app.service /etc/systemd/system/
 
 # Install requirements via pip3
@@ -27,7 +27,6 @@ WORKDIR /app
 RUN checkmodule -M -m nginx_connect_flask_sock.te -o nginx_connect_flask_sock.mo
 RUN semodule_package -o nginx_connect_flask_sock.pp -m nginx_connect_flask_sock.mo
 RUN semodule -i nginx_connect_flask_sock.pp
-RUN mkdir /run/flask-app && chgrp -R nginx /run/flask-app && chmod 770 /run/flask-app
 RUN semanage fcontext -a -t httpd_var_run_t /run/flask-app
 
 # Enable our application services
