@@ -72,6 +72,8 @@ def get_os_info():
             info['distro_id'] = distro.id()
             info['distro_version'] = distro.version(pretty=True)
             info['distro_codename'] = distro.codename()
+            if os.path.isfile("/run/.containerenv"):
+                info['system'] = 'Linux (containerized)'
         except Exception:
             info['distro_name'] = 'N/A (distro lib error)'
             info['distro_id'] = 'unknown'
