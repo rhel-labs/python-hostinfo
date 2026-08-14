@@ -131,7 +131,7 @@ def get_system_package_version(package_name, os_id='unknown'):
 
     if any(dist in os_id_lower for dist in ['ubuntu', 'debian', 'mint']):
         command = ['dpkg-query', '-W', '-f=${Version}', package_name]
-    elif any(dist in os_id_lower for dist in ['centos', 'rhel', 'fedora', 'almalinux', 'rocky']):
+    elif any(dist in os_id_lower for dist in ['centos', 'rhel', 'fedora', 'almalinux', 'rocky','hummingbird']):
         command = ['rpm', '-q', '--qf', '%{VERSION}', package_name]
     elif 'arch' in os_id_lower:
         command = ['pacman', '-Q', package_name]
