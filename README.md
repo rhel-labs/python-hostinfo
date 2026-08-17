@@ -73,6 +73,15 @@ You can run this application either locally using Python for development or as a
     ```bash
     podman run -d -p 8080:8000 --name my-host-details-instance host-details-app
     ```
+    *(Optional) To enable the **Host View** feature in the container, mount the read-only paths relevant to your OS (e.g. omit dpkg on Fedora) and pass the hostname environment variable:*
+    ```bash
+    podman run -d -p 8080:8000 --name my-host-details-instance \
+      -e HOST_HOSTNAME=$(hostname) \
+      -v /usr/lib/os-release:/host/os-release:ro \
+      -v /var/lib/rpm:/host/var/lib/rpm:ro \
+      -v /usr/lib:/host/usr/lib:ro \
+      host-details-app
+    ```
 3.  **Access**: Open `http://localhost:8080` in your browser.
 
 ---
