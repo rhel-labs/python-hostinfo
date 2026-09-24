@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const pythonPackagesTbody = document.getElementById('python-packages-tbody');
     const systemPackagesTbody = document.getElementById('system-packages-tbody');
     const systemOsIdEl = document.getElementById('system-os-id');
+    const viewToggle = document.getElementById('viewToggle');
+    const hostMountWarning = document.getElementById('host-mount-warning');
 
     // Function to create a detail item for the OS card
     function createOsDetailItem(icon, label, value) {
@@ -38,7 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingSpinner.classList.remove('d-none'); // Show spinner
 
         try {
-            const response = await fetch('/data');
+            const viewMode = viewToggle.checked ? 'host' : 'container';
+            const response = await fetch(`/data?view=${viewMode}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -49,12 +52,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 2. Update OS Details Card
             const os = data.os_details;
+            const isContainer = viewMode === 'container';
+            const kernelSuffix = isContainer ? ' (Host)' : '';
+
+            // Show host-view toggle only when running inside a container.
+            // Only evaluated in container mode — host view always returns a different system string.
+            if (viewMode === 'container') {
+                viewToggle.closest('.form-check').classList.toggle('d-none', os.system !== 'Linux (containerized)');
+            }
+
+            // Check if host mounts are missing
+            if (viewMode === 'host' && (os.distro_name.includes('Host mount missing') || os.node.includes('Missing HOST_HOSTNAME'))) {
+                hostMountWarning.classList.remove('d-none');
+            } else {
+                hostMountWarning.classList.add('d-none');
+            }
+            
             osDetailsContainer.innerHTML = `
                 ${createOsDetailItem('bi-hdd-stack', 'Hostname', os.node)}
                 ${createOsDetailItem('bi-columns-gap', 'System', os.system)}
                 ${createOsDetailItem('bi-cassette', 'Distribution', os.distro_name)}
-                ${createOsDetailItem('bi-ticket-detailed', 'Kernel Release', os.release)}
-                ${createOsDetailItem('bi-gear-wide-connected', 'Kernel Version', os.version)}
+                ${createOsDetailItem('bi-ticket-detailed', 'Kernel Release' + kernelSuffix, os.release)}
+                ${createOsDetailItem('bi-gear-wide-connected', 'Kernel Version' + kernelSuffix, os.version)}
                 ${createOsDetailItem('bi-cpu', 'Processor', os.processor)}
                 ${createOsDetailItem('bi-motherboard', 'Architecture', os.machine)}
 		${createOsDetailItem('bi-stopwatch', 'System Uptime', os.uptime)}
@@ -80,6 +99,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial data load
     updateData();
+
+    // Re-fetch when toggle changes
+    viewToggle.addEventListener('change', updateData);
 
     // Set interval to refresh data every 5 seconds (5000 milliseconds)
     setInterval(updateData, 5000);
