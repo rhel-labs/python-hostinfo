@@ -39,7 +39,7 @@ def get_image_mode_state():
         print(f"An error occurred while reading /run/ostree-booted: {e}")
         return None
 
-def get_os_info():
+def get_os_info(view='container'):
     """
     Retrieves basic OS and kernel information.
     """
@@ -64,6 +64,27 @@ def get_os_info():
         'machine': platform.machine(),
         'processor': processor_info, # Use our more reliable variable
     }
+
+    if view == 'host':
+        # Rely on an environment variable for the host's hostname to bypass SELinux restrictions on /etc/hostname
+        info['node'] = os.environ.get('HOST_HOSTNAME', 'N/A (Missing HOST_HOSTNAME env var)')
+            
+        try:
+            with open('/host/os-release', 'r') as f:
+                os_release_data = {}
+                for line in f:
+                    if '=' in line:
+                        k, v = line.strip().split('=', 1)
+                        os_release_data[k] = v.strip('"\'')
+                info['distro_name'] = os_release_data.get('PRETTY_NAME', 'Unknown Host OS')
+                info['distro_id'] = os_release_data.get('ID', 'unknown')
+                info['distro_version'] = os_release_data.get('VERSION_ID', 'unknown')
+                info['system'] = 'Linux (Host View)'
+        except Exception:
+            info['distro_name'] = 'N/A (Host mount missing)'
+            info['distro_id'] = 'unknown'
+            info['system'] = 'Linux (Host View)'
+        return info
 
     # Add Linux distribution details if available
     if info['system'] == 'Linux':
@@ -108,10 +129,29 @@ def get_system_uptime():
     except Exception:
         return "Error"
 
-def get_python_package_version(package_name):
+def get_python_package_version(package_name, view='container'):
     """
     Retrieves the version of an installed Python package.
     """
+    if view == 'host':
+        try:
+            import glob
+            # Case insensitive match by checking folders
+            site_packages_paths = glob.glob("/host/usr/lib/python3.*/site-packages/")
+            for sp in site_packages_paths:
+                for dist_info in glob.glob(f"{sp}*.dist-info/METADATA") + glob.glob(f"{sp}*.egg-info/PKG-INFO"):
+                    # Check if the folder name starts with package_name (ignoring case and dashes)
+                    folder_name = os.path.basename(os.path.dirname(dist_info)).lower()
+                    pkg_normalized = package_name.lower().replace('-', '_')
+                    if folder_name.startswith(pkg_normalized + '-'):
+                        with open(dist_info, 'r') as f:
+                            for line in f:
+                                if line.startswith('Version: '):
+                                    return line.split('Version: ')[1].strip()
+            return "Not Found"
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     try:
         return importlib.metadata.version(package_name)
     except importlib.metadata.PackageNotFoundError:
@@ -119,7 +159,7 @@ def get_python_package_version(package_name):
     except Exception as e:
         return f"Error: {str(e)}"
 
-def get_system_package_version(package_name, os_id='unknown'):
+def get_system_package_version(package_name, os_id='unknown', view='container'):
     """
     Retrieves the version of an installed system package.
     """
@@ -130,9 +170,15 @@ def get_system_package_version(package_name, os_id='unknown'):
     os_id_lower = os_id.lower()
 
     if any(dist in os_id_lower for dist in ['ubuntu', 'debian', 'mint']):
-        command = ['dpkg-query', '-W', '-f=${Version}', package_name]
+        command = ['dpkg-query', '-W', '-f=${Version}']
+        if view == 'host':
+            command.append('--admindir=/host/var/lib/dpkg')
+        command.append(package_name)
     elif any(dist in os_id_lower for dist in ['centos', 'rhel', 'fedora', 'almalinux', 'rocky','hummingbird']):
-        command = ['rpm', '-q', '--qf', '%{VERSION}', package_name]
+        command = ['rpm', '-q', '--qf', '%{VERSION}']
+        if view == 'host':
+            command.extend(['--dbpath', '/host/var/lib/rpm'])
+        command.append(package_name)
     elif 'arch' in os_id_lower:
         command = ['pacman', '-Q', package_name]
     elif 'macos' in os_id_lower:

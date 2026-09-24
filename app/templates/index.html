@@ -16,6 +16,10 @@
                 Live Host Details
             </a>
             <div class="d-flex align-items-center text-light">
+                <div class="form-check form-switch me-4">
+                    <input class="form-check-input" type="checkbox" role="switch" id="viewToggle">
+                    <label class="form-check-label" for="viewToggle">Host View</label>
+                </div>
                 <span class="me-2">Last Updated: <span id="last-updated">Never</span></span>
                 <div class="spinner-border spinner-border-sm text-success d-none" role="status" id="loading-spinner">
                     <span class="visually-hidden">Loading...</span>
@@ -25,6 +29,11 @@
     </nav>
 
     <main class="container-fluid mt-4">
+        <div id="host-mount-warning" class="alert alert-warning d-none shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+            <strong>Host View Incomplete:</strong> The container was not started with the required host mounts or environment variables. Please check the README for the correct <code>podman run</code> command to enable full Host View.
+        </div>
+
         <div class="row">
             <div class="col-12">
                 <div class="card bg-dark text-light border-secondary mb-4">

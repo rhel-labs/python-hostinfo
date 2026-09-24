@@ -3,7 +3,7 @@
 import json
 import os
 from datetime import datetime
-from flask import Flask, render_template, jsonify # <-- Add jsonify
+from flask import Flask, render_template, jsonify, request
 from helpers import get_os_info, get_python_package_version, get_system_package_version, get_system_uptime, get_image_mode_state
 
 app = Flask(__name__)
@@ -25,10 +25,10 @@ def load_config():
         print(f"Error: Could not decode {CONFIG_FILE}. Returning empty config.")
         return {"python_packages": [], "system_packages": []}
 
-def get_all_data():
+def get_all_data(view='container'):
     """Helper function to gather all system data."""
     config = load_config()
-    os_details = get_os_info()
+    os_details = get_os_info(view)
    
     os_details['uptime'] = get_system_uptime()
 
@@ -41,12 +41,12 @@ def get_all_data():
     os_details['mode'] = get_image_mode_state()
 
     python_pkg_versions = [
-        {"name": pkg_name, "version": get_python_package_version(pkg_name)}
+        {"name": pkg_name, "version": get_python_package_version(pkg_name, view)}
         for pkg_name in config.get("python_packages", [])
     ]
 
     system_pkg_versions = [
-        {"name": pkg_name, "version": get_system_package_version(pkg_name, current_os_id)}
+        {"name": pkg_name, "version": get_system_package_version(pkg_name, current_os_id, view)}
         for pkg_name in config.get("system_packages", [])
     ]
     
@@ -68,7 +68,8 @@ def index():
 @app.route('/data')
 def data():
     """API endpoint to serve system data as JSON."""
-    all_data = get_all_data()
+    view = request.args.get('view', 'container')
+    all_data = get_all_data(view)
     return jsonify(all_data)
 
 if __name__ == '__main__':
