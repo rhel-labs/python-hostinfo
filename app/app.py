@@ -8,22 +8,25 @@ from helpers import get_os_info, get_python_package_version, get_system_package_
 
 app = Flask(__name__)
 
-# Path to the config file
+# /etc/hostinfo/config.json takes precedence (bootc: mutable post-deploy);
+# falls back to /app/config.json (baked into the image).
+ETC_CONFIG_FILE = '/etc/hostinfo/config.json'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
+APP_CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
 
 def load_config():
-    """Loads the configuration from config.json."""
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        return config
-    except FileNotFoundError:
-        print(f"Error: {CONFIG_FILE} not found. Returning empty config.")
-        return {"python_packages": [], "system_packages": []}
-    except json.JSONDecodeError:
-        print(f"Error: Could not decode {CONFIG_FILE}. Returning empty config.")
-        return {"python_packages": [], "system_packages": []}
+    """Loads configuration, preferring /etc/hostinfo/config.json over the baked-in default."""
+    for path in (ETC_CONFIG_FILE, APP_CONFIG_FILE):
+        try:
+            with open(path, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            continue
+        except json.JSONDecodeError:
+            print(f"Error: Could not decode {path}. Trying next.")
+            continue
+    print("Error: No valid config file found. Returning empty config.")
+    return {"python_packages": [], "system_packages": []}
 
 def get_all_data(view='container'):
     """Helper function to gather all system data."""
