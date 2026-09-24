@@ -55,6 +55,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const isContainer = viewMode === 'container';
             const kernelSuffix = isContainer ? ' (Host)' : '';
 
+            // Show host-view toggle only when running inside a container.
+            // Only evaluated in container mode — host view always returns a different system string.
+            if (viewMode === 'container') {
+                viewToggle.closest('.form-check').classList.toggle('d-none', os.system !== 'Linux (containerized)');
+            }
+
             // Check if host mounts are missing
             if (viewMode === 'host' && (os.distro_name.includes('Host mount missing') || os.node.includes('Missing HOST_HOSTNAME'))) {
                 hostMountWarning.classList.remove('d-none');
